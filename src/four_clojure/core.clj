@@ -294,3 +294,46 @@
 (= (take 5 (funky 3 #(- % 3) #(+ 5 %))) [3 0 5 2 7])
 
 (= (take 12 (funky 0 inc dec inc dec inc)) [0 1 0 1 0 1 2 1 2 1 2 3])
+
+
+(defn euler [x]
+  (if (<= x 1) 1
+      (letfn [(gcd [a b]
+                (let [mx (max a b)
+                      mn (min a b)
+                      r (rem mx mn)]
+                  (if (= 0 r) mn
+                      (gcd mn r))))]
+        (loop [curr x acc 0]
+          (if (= curr 1) acc
+              (recur (dec curr) (if (= 1 (gcd x (dec curr))) (inc acc)
+                                    acc)))))))
+
+(euler 1)
+
+(= (euler 1) 1)
+
+(euler 10)
+
+(= (euler 10) (count '(1 3 7 9)) 4)
+
+
+;; Problem 100
+;; LCM
+
+(defn lcm-eles [& eles]
+  (letfn [(gcd [a b]
+            (if (= 0 b) a
+                (recur b
+                       (mod a b))))
+          (lcm [a b]
+            (/ (* a b)
+               (gcd a b)))]
+         (reduce lcm eles)))
+
+
+
+;; Problem 195
+;; Parentheses... Again
+
+(= [#{""} #{"()"} #{"()()" "(())"}] (map (fn [n] (__ n)) [0 1 2]))
