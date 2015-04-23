@@ -337,3 +337,58 @@
 ;; Parentheses... Again
 
 (= [#{""} #{"()"} #{"()()" "(())"}] (map (fn [n] (__ n)) [0 1 2]))
+
+;; Problem 147
+;; Pascal's Trapezoid
+
+(fn my-fnk [input]
+  (let [values (partition 2 1 input)
+        f (first input)
+        l (last input)
+        next (if (seq values)
+               (conj (apply vector
+                            f
+                            (map #(apply +' %) values))
+                     l)
+               [f l])]
+    (lazy-seq (cons input (my-fnk next)))))
+
+;; Problem 146
+;; Trees into tables
+
+(fn [input]
+  (into {} (for [[key1 mp] input
+                 [key2 v] mp]
+             (hash-map [key1 key2] v))))
+
+;; Problem 153
+;; Pairwise Disjoint Sets
+#(apply distinct? (mapcat seq %))
+
+;; Problem 56
+;; Find Distinct Items
+(defn my-distinct [items]
+  (loop [itms (reverse items)
+         out []]
+    (let [f (first itms)
+          r (vec (rest itms))]
+      (if (nil? f)
+        (reverse out)
+        (if (some #(= f %) r)
+          (recur r out)
+          (recur r (conj out f)))))))
+
+;; Problem 58
+;; Function Composition
+(defn my-comp [& fnks]
+  (fn [& args]
+    (apply (reduce (fn [fn1 fn2]
+                     (fn [& as]
+                       (fn1 (apply fn2 as))))
+             fnks)
+     args)))
+
+;; Problem 54
+;; Partition a Sequence
+(= (__ 3 (range 9)) '((0 1 2) (3 4 5) (6 7 8)))
+(= (__ 2 (range 8)) '((0 1) (2 3) (4 5) (6 7)))
