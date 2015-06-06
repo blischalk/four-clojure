@@ -392,3 +392,23 @@
 ;; Partition a Sequence
 (= (__ 3 (range 9)) '((0 1 2) (3 4 5) (6 7 8)))
 (= (__ 2 (range 8)) '((0 1) (2 3) (4 5) (6 7)))
+(= (__ 3 (range 8)) '((0 1 2) (3 4 5)))
+
+(defn party [cnt data]
+  (if (or (empty? data) (< (count data) cnt))
+    (empty data)
+    (cons (take cnt data) (party cnt (drop cnt data)))))
+
+;; Problem 59
+;; Juxtaposition
+
+(fn [& fns]
+  (fn [& eles]
+    (vec (for [f fns]
+           (apply f eles)))))
+
+(= [21 6 1] ((my-juxt + max min) 2 3 5 1 6 4))
+
+(= ["HELLO" 5] ((my-juxt #(.toUpperCase %) count) "hello"))
+
+(= [2 6 4] ((my-juxt :a :c :b) {:a 2, :b 4, :c 6, :d 8 :e 10}))
