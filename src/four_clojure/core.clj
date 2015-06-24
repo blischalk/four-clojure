@@ -412,3 +412,88 @@
 (= ["HELLO" 5] ((my-juxt #(.toUpperCase %) count) "hello"))
 
 (= [2 6 4] ((my-juxt :a :c :b) {:a 2, :b 4, :c 6, :d 8 :e 10}))
+
+;; Problem 74
+;; Filter Perfect Squares
+
+(fn [num-str]
+  (let [nums (clojure.string/split num-str #",")
+        nums-as-ints (map read-string nums)
+        perfect-sqrs (set (map #(* % %) (range 100)))
+        filtered (filter perfect-sqrs nums-as-ints)]
+    (apply str (interpose "," filtered))))
+
+(= (fps "4,5,6,7,8,9") "4,9")
+
+(= (fps "15,16,25,36,37") "16,25,36")
+
+;; Problem 76
+;; Intro to Trampoline
+
+(= [1 3 5 7 9 11]
+   (letfn
+     [(foo [x y] #(bar (conj x y) y))
+      (bar [x y] (if (> (last x) 10)
+                   x
+                   #(foo x (+ 2 y))))]
+     (trampoline foo [] 1)))
+
+;; Problem 65
+;; Black Box Testing
+(defn black-box [arg]
+  ({{} :map #{} :set} (empty arg) (if (reversible? arg) :vector :list)))
+
+(= :map (black-box {:a 1, :b 2}))
+(= :list (black-box (range (rand-int 20))))
+(= :vector (black-box [1 2 3 4 5 6]))
+(= :set (black-box #{10 (rand-int 5)}))
+(= [:map :set :vector :list] (map black-box [{} #{} [] ()]))
+
+;; Problem 69
+;; Merge with a function Write a function which takes a function f and
+;; a variable number of maps. Your function should return a map that
+;; consists of the rest of the maps conj-ed onto the first. If a key
+;; occurs in more than one map, the mapping(s) from the latter
+;; (left-to-right) should be combined with the mapping in the result
+;; by calling (f val-in-result val-in-latter)
+(some identity [{:first "item"} {:second "value"}])
+(reduce)
+
+(defn merge-with' [f & maps]
+  (when (some identity maps)
+    (let [merge-entry (fn [m e]
+                        (let [k (key e) v (val e)]
+                          (if (contains? m k)
+                            (assoc m k (f (get m k) v))
+                            (assoc m k v))))
+          merge2 (fn [m1 m2]
+                   (reduce merge-entry (or m1 {}) (seq m2)))]
+      (reduce merge2 maps))))
+
+(= (__ * {:a 2, :b 3, :c 4} {:a 2} {:b 2} {:c 5})
+   {:a 4, :b 6, :c 20})
+
+(= (__ - {1 10, 2 20} {1 3, 2 10, 3 15})
+   {1 7, 2 10, 3 15})
+
+(= (__ concat {:a [3], :b [6]} {:a [4 5], :c [8 9]} {:b [7]})
+   {:a [3 4 5], :b [6 7], :c [8 9]})
+
+
+(defmacro solves [f & body]
+  (let [replaced (clojure.walk/postwalk-replace {'__ f} body)]
+    `(and ~@replaced)))
+
+(solves
+ (fn [foo] foo)
+ (= (__ 6) true)
+ (= (__ 496) true)
+ (= (__ 500) false))
+
+
+
+;; Problem 80
+;; Perfect Numbers
+;; A number is "perfect" if the sum of its divisors equal the number
+;; itself. 6 is a perfect number because 1+2+3=6. Write a function
+;; which returns true for perfect numbers and false otherwise.
