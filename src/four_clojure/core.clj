@@ -502,3 +502,51 @@
   (= n (apply +
               (filter #(= 0 (mod n %))
                       (map inc (range (/ n 2)))))))
+
+
+;; Problem 77
+;; Anagram Finder Write a function which finds all the anagrams in a
+;; vector of words. A word x is an anagram of word y if all the
+;; letters in x can be rearranged in a different order to form y. Your
+;; function should return a set of sets, where each sub-set is a group
+;; of words which are anagrams of each other. Each sub-set should have
+;; at least two words. Words without any anagrams should not be
+;; included in the result.
+(defn anagram-finder [xs]
+  (let [sets (map set xs)
+        freqs (frequencies sets)
+        anagram-sets (filter #(>= (last %) 2) freqs)
+        winning-sets (map first anagram-sets)]
+    (set (for [w winning-sets]
+           (set (filter #(= w (set %)) xs))))))
+
+(solves
+ anagram-finder
+ (= (__ ["meat" "mat" "team" "mate" "eat"])
+    #{#{"meat" "team" "mate"}}))
+
+;; Problem 60
+;; Sequence Reductions
+;; Write a function which behaves like reduce, but
+;; returns each intermediate value of the reduction. Your function
+;; must accept either two or three arguments, and the return sequence
+;; must be lazy.
+
+(defn sequence-reduction
+  ([f coll]
+   (sequence-reduction f (first coll) (rest coll)))
+  ([f start coll]
+   (let [fst (first coll)
+         result (f start fst)
+         rst (rest coll)]
+     (cons start (lazy-seq (if (empty? rst)
+                             [result]
+                             (sequence-reduction f result rst)))))))
+
+
+(solves
+ sequence-reduction
+ (= (take 5 (__ + (range))) [0 1 3 6 10])
+ (= (__ conj [1] [2 3 4]) [[1] [1 2] [1 2 3] [1 2 3 4]])
+
+ (= (last (__ * 2 [3 4 5])) (reduce * 2 [3 4 5]) 120))
