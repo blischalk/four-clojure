@@ -1,17 +1,5 @@
 (ns four-clojure.core)
 
-(defn happy-numbers [number]
-  (let [orig-input number]
-    (loop [number number counter 0]
-      (let [p-num (rest (clojure.string/split (str number) #""))]
-        (let [result 
-              (reduce + (map #(* % %) (map read-string p-num)))]
-          (cond (= 1 result) true
-                (> counter orig-input) false
-                :otherwise (recur result (inc counter))))))))
-
-(happy-numbers 8)
-
 ;; Naive implementation.  Turn to string and reverse / compare
 (defn palendromic-first [start]
   (let [num-as-str (str start)
@@ -550,3 +538,362 @@
  (= (__ conj [1] [2 3 4]) [[1] [1 2] [1 2 3] [1 2 3 4]])
 
  (= (last (__ * 2 [3 4 5])) (reduce * 2 [3 4 5]) 120))
+
+
+;; Problem 102
+;; intoCamelCase When working with java, you often need to create an
+;; object with fieldsLikeThis, but you'd rather work with a hashmap
+;; that has :keys-like-this until it's time to convert. Write a
+;; function which takes lower-case hyphen-separated strings and
+;; converts them to camel-case strings.
+
+(defn camel [word]
+  (let [pieces (clojure.string/split word #"-")
+        f (first pieces)
+        r (rest pieces)]
+    (str f (if r (apply str (map clojure.string/capitalize r))))))
+
+(camel "this-camel-case")
+
+
+(solves
+ camel
+ (= (__ "something") "something")
+ (= (__ "multi-word-key") "multiWordKey")
+ (= (__ "leaveMeAlone") "leaveMeAlone"))
+
+
+;; Problem 86
+;; Happy Numbers Happy numbers are positive integers that follow a
+;; particular formula: take each individual digit, square it, and then
+;; sum the squares to get a new number. Repeat with the new number and
+;; eventually, you might get to a number whose squared sum is 1. This
+;; is a happy number. An unhappy number (or sad number) is one that
+;; loops endlessly. Write a function that determines if a number is
+;; happy or not.
+
+(defn happy? [number]
+  (let [orig-input number]
+    (loop [number number counter 0]
+      (let [p-num (rest (clojure.string/split (str number) #""))]
+        (let [result
+              (reduce + (map #(* % %) (map read-string p-num)))]
+          (cond (= 1 result) true
+                (> counter orig-input) false
+                :otherwise (recur result (inc counter))))))))
+
+(solves
+ happy?
+ (= (__ 7) true)
+ (= (__ 986543210) true)
+ (= (__ 2) false)
+ (= (__ 3) false))
+
+
+;; Problem 78
+;; Reimplement Trampoline
+;; Reimplement the function described in "Intro to Trampoline".
+
+;; The trampoline function takes a function f and a variable number of
+;; parameters. Trampoline calls f with any parameters that were
+;; supplied. If f returns a function, trampoline calls that function
+;; with no arguments. This is repeated, until the return value is not
+;; a function, and then trampoline returns that non-function
+;; value. This is useful for implementing mutually recursive
+;; algorithms in a way that won't consume the stack.
+
+(defn trampoline' [f & args]
+  (loop [result (apply f args)]
+    (if (not (fn? result))
+      result
+      (recur (result)))))
+
+(solves
+ trampoline'
+ (= (letfn [(triple [x] #(sub-two (* 3 x)))
+            (sub-two [x] #(stop?(- x 2)))
+            (stop? [x] (if (> x 50) x #(triple x)))]
+      (__ triple 2))
+    82)
+ (= (letfn [(my-even? [x] (if (zero? x) true #(my-odd? (dec x))))
+            (my-odd? [x] (if (zero? x) false #(my-even? (dec x))))]
+      (map (partial __ my-even?) (range 6)))
+    [true false true false true false]))
+
+;; Problem 85
+;; Power Set Write a function which generates the power set of a given
+;; set. The power set of a set x is the set of all subsets of x,
+;; including the empty set and x itself.
+(defn power-set [xs]
+  (set (map set
+            (loop [[f & r] (seq xs) result '(())]
+                  (if f (recur r (concat result (map #(cons f %) result)))
+                      result)))))
+
+(solves
+ power-set
+ (= (__ #{1 :a}) #{#{1 :a} #{:a} #{} #{1}})
+ (= (__ #{}) #{#{}})
+ (= (__ #{1 2 3})
+    #{#{} #{1} #{2} #{3} #{1 2} #{1 3} #{2 3} #{1 2 3}})
+ (= (count (__ (into #{} (range 10)))) 1024))
+
+;; Probelm 115
+;; A balanced number is one whose component digits have
+;; the same sum on the left and right halves of the number. Write a
+;; function which accepts an integer n, and returns true if n is
+;; balanced.
+(defn balanced-number [number]
+  {:pre  [(integer? number)]}
+  (let [as-str (str number)
+        cnt (count as-str)
+        items (quot cnt 2)
+        l (take items as-str)
+        r (take items (reverse as-str))
+        sum (fn [s] (reduce + (map #(Integer. (str %)) s)))]
+    (= (sum l) (sum r))))
+
+(solves balanced-number
+        (= true (__ 11))
+        (= true (__ 121))
+        (= false (__ 123))
+        (= true (__ 0))
+        (= false (__ 88099))
+        (= true (__ 89098))
+        (= true (__ 89089))
+        (= (take 20 (filter __ (range)))
+           [0 1 2 3 4 5 6 7 8 9 11 22 33 44 55 66 77 88 99 101]))
+
+;; Problem 116
+;; A balanced prime is a prime number which is also the mean of the primes
+;; directly before and after it in the sequence of valid primes.
+;; Create a function which takes an integer n, and returns true if it is a balanced prime.
+
+
+(defn is-prime? [n]
+  (if (< n 2) false
+      (let [max (/ n 2)
+            possible (range 2 (inc max))]
+        (empty? (filter #(= (mod n %) 0) possible)))))
+
+
+(defn balanced-prime [n]
+  (if (is-prime? n)
+    (let [next (first (take 1 (filter is-prime? (iterate inc (inc n)))))
+          prev (first (take 1 (filter is-prime? (iterate dec (dec n)))))
+          avg (/ (+ next prev) 2)]
+      (= avg n))
+    false))
+
+(balanced-prime 563)
+
+(= false (balanced-prime 4))
+
+(= true (balanced-prime 563)) ;; 557    563    569
+
+(= 1103 (nth (filter balanced-prime (range 2)) 15))
+
+(nth (filter balanced-prime (range 2 100)) 15)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+;; Color permutations of a specific length of pattern
+(def colors [:red :green])
+
+(defn allColors [n]
+  ;; Colors is the full list of colors
+  ;; at each level of recursion!
+  (if (= n 0) '(())
+      (mapcat (fn [c]
+                (map #(cons c %)
+                     (allColors (- n 1))))
+              colors)))
+
+
+(defn allColors' [n]
+  (if (= n 0)
+    '(())
+    ;; Colors is the full list of colors
+    ;; at each level of recursion!
+    (for [c colors items (allColors' (dec n))]
+      (cons c items))))
+
+
+(allColors 1)
+
+(allColors' 2)
+
+((:red :red :red) (:red :red :green) (:red :green :red) (:red :green :green) (:green :red :red) (:green :red :green) (:green :green :red) (:green :green :green))
+
+(((:red (:red (:red)) (:red (:green))) (:red (:green (:red)) (:green (:green)))) ((:green (:red (:red)) (:red (:green))) (:green (:green (:red)) (:green (:green)))))
+
+
+(let [colors [:red :purple]]
+  (map (fn [i] (map #(cons i %) '((:red) (:purple)))) colors))
+
+(((:red :red) (:red :purple)) ((:purple :red) (:purple :purple)))
+((:red :red) (:red :purple) (:purple :red) (:purple :purple))
+
+(map list [:red :purple])
+
+{4 #{2 -2}}
+
+#_(defn my-funk [f d]
+  (reduce (fn [coll i]
+            ;; {}
+            (if (get coll i)
+              (update coll (f i) conj i)
+              ())) {} d))
+
+(= (__ #(* % %) #{-2 -1 0 1 2})
+   #{#{0} #{1 -1} #{2 -2}})
+
+
+;; Problem 105
+;; Identify keys and values
+
+(defn keys-and-values [input]
+  (let [iter-fn (fn [col in key]
+                  (if (empty? in) col
+                      (let [item (first in)
+                            updated (cond (keyword? item) (assoc col item [])
+                                          (keyword? key) (update-in col [key] conj item))
+                            next-key (if (keyword? item) item key)]
+                        (recur updated (rest in) next-key))))]
+    (iter-fn {} input nil)))
+
+
+(defn keys-and-values-2 [input]
+  (letfn [(kv-iter [coll in]
+            (if (empty? in) coll
+                (let [key (first in)
+                      not-kw (complement keyword?)
+                      rst-in (rest in)
+                      values (take-while not-kw rst-in)
+                      rst (drop-while not-kw rst-in)]
+                  (recur (assoc coll key values) rst))))]
+    (kv-iter {} input)))
+
+;; Problem 115
+
+(defn foobar [input]
+  (let [explode (fn explode [n]
+                  (if (= n 0)
+                    []
+                    (let [d (rem n 10)
+                          r (quot n 10)]
+                      (conj (explode r) d))))
+        nums (explode input)
+        midpoint (/ (count nums) 2)]
+    (apply = (map (fn [ns]
+                    (apply + (take midpoint ns)))
+                  [nums (reverse nums)]))))
+
+
+(fn [number]
+  {:pre  [(integer? number)]}
+  (let [as-str (str number)
+        cnt (count as-str)
+        items (quot cnt 2)
+        l (take items as-str)
+        r (take items (reverse as-str))
+        sum (fn [s] (reduce + (map #(Integer. (str %)) s)))]
+    (= (sum l) (sum r))))
+
+
+;; Problem 110
+;; Sequence of pronunciations
+
+
+(= [[1 1] [2 1] [1 2 1 1]] (take 3 (__ [1])))
+(= [3 1 2 4] (first (__ [1 1 1 4 4])))
+(= [1 1 1 3 2 1 3 2 1 1] (nth (__ [1]) 6))
+
+(fn [seed]
+  (rest (iterate
+         #(->> %
+               (partition-by identity)
+               (mapcat (juxt count first)))
+         seed)))
+
+
+;; Problem 158
+;; Decurry
+
+(= 10 ((__ (fn [a]
+             (fn [b]
+               (fn [c]
+                 (fn [d]
+                   (+ a b c d))))))
+       1 2 3 4))
+
+(fn decurry [input]
+  (fn [& args]
+    (let [f (first args)
+          result (input f)
+          rst (rest args)
+          fnk-returned (fn? result)]
+      (if fnk-returned
+        (apply (decurry result) rst)
+        result))))
+
+
+;; Problem 93
+;; Partially Flatten a Sequence
+
+(defn almost-flatten [input-col]
+  (filter (fn [item]
+            (or (and (sequential? item)
+                     (not (some sequential? item)))
+                ((complement sequential?) item)))
+          (tree-seq (fn [input]
+                      (and (sequential? input)
+                           (some sequential? input)))
+                    seq
+                    input-col)))
+
+(solves
+ almost-flatten
+ (= (__ [["Do"] ["Nothing"]])
+    [["Do"] ["Nothing"]])
+ (= (__ [[[[:a :b]]] [[:c :d]] [:e :f]])
+    [[:a :b] [:c :d] [:e :f]])
+ (= (__ '((1 2)((3 4)((((5 6)))))))
+    '((1 2)(3 4)(5 6))))
+
+;; Problem 114
+;; Global take-while
+;; take-while is great for filtering sequences, but it limited: you can only examine a single item of the sequence at a time. What if you need to keep track of some state as you go over the sequence?
+;; Write a function which accepts an integer n, a predicate p, and a sequence. It should return a lazy sequence of items in the list up to, but not including, the nth item that satisfies the predicate.
+
+(defn global-take-while [i p s])
+
+(solves
+ global-take-while
+ (= [2 3 5 7 11 13]
+    (__ 4 #(= 2 (mod % 3))
+        [2 3 5 7 11 13 17 19 23]))
+
+ (= ["this" "is" "a" "sentence"]
+    (__ 3 #(some #{\i} %)
+        ["this" "is" "a" "sentence" "i" "wrote"]))
+
+ (= ["this" "is"]
+    (__ 1 #{"a"}
+        ["this" "is" "a" "sentence" "i" "wrote"])))
