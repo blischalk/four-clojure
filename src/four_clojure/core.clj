@@ -882,7 +882,16 @@
 ;; take-while is great for filtering sequences, but it limited: you can only examine a single item of the sequence at a time. What if you need to keep track of some state as you go over the sequence?
 ;; Write a function which accepts an integer n, a predicate p, and a sequence. It should return a lazy sequence of items in the list up to, but not including, the nth item that satisfies the predicate.
 
-(defn global-take-while [i p s])
+
+(defn global-take-while
+  ([n p sq] (take-while-state n p sq 0))
+  ([n p sq a]
+   (let [f (first sq)
+         rst (rest sq)
+         a' (if (p f) (inc a) a)]
+     (if (= a' n) '()
+       (lazy-seq (cons f (take-while-state n p rst a')))))))
+
 
 (solves
  global-take-while
@@ -895,5 +904,5 @@
         ["this" "is" "a" "sentence" "i" "wrote"]))
 
  (= ["this" "is"]
-    (__ 1 #{"a"}
+    (take-while-state 1 #{"a"}
         ["this" "is" "a" "sentence" "i" "wrote"])))
