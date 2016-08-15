@@ -429,13 +429,19 @@
 ;; Problem 65
 ;; Black Box Testing
 (defn black-box [arg]
-  ({{} :map #{} :set} (empty arg) (if (reversible? arg) :vector :list)))
+  ({{} :map #{} :set}
+   (empty arg)
+   (if (reversible? arg)
+     :vector
+     :list)))
 
 (= :map (black-box {:a 1, :b 2}))
 (= :list (black-box (range (rand-int 20))))
 (= :vector (black-box [1 2 3 4 5 6]))
 (= :set (black-box #{10 (rand-int 5)}))
 (= [:map :set :vector :list] (map black-box [{} #{} [] ()]))
+
+({:foo "bar"} :foo)
 
 ;; Problem 69
 ;; Merge with a function Write a function which takes a function f and
@@ -696,6 +702,12 @@
 (nth (filter balanced-prime (range 2 100)) 15)
 
 
+;; Problem 103
+;; Generating k-combinations
+
+
+
+
 
 
 
@@ -763,6 +775,36 @@
 
 (= (__ #(* % %) #{-2 -1 0 1 2})
    #{#{0} #{1 -1} #{2 -2}})
+
+
+;; Problem 104
+;; Write Roman Numerals
+
+(fn roman
+  ([n] (let [values [["M" 1000]
+                     ["CM" 900]
+                     ["D" 500]
+                     ["CD" 400]
+                     ["C" 100]
+                     ["XC" 90]
+                     ["L" 50]
+                     ["XL" 40]
+                     ["X" 10]
+                     ["IX" 9]
+                     ["V" 5]
+                     ["IV" 4]
+                     ["I" 1]]]
+
+         (roman n values "")))
+
+  ([n vals s]
+   (if (seq vals)
+     (let [[l v] (first vals)
+           [n' vals' s'] (if (>= n v)
+                           [(- n v) vals (str s l)]
+                           [n (rest vals) s])]
+       (recur n' vals' s'))
+     s)))
 
 
 ;; Problem 105
@@ -907,4 +949,80 @@
     (take-while-state 1 #{"a"}
         ["this" "is" "a" "sentence" "i" "wrote"])))
 
+
+
+;; Problem 44
+(fn rotate
+  [index coll] (cond
+                 (= index 0) coll
+                 (> index 0) (rotate (dec index) (concat (rest coll) (list (first coll))))
+                 (< index 0) (rotate (inc index) (concat (list (last coll)) (reverse (rest (reverse coll)))))))
+
+(fn rotate' [n sq]
+  (let [c (count sq)
+        n' (mod (java.lang.Math/abs n) c)
+        n'' (if (< n 0) (- c n') n')]
+    (flatten (conj (take n'' sq) (drop n'' sq)))))
+
+
+;; Problem 132
+;; Insert between two items
+(defn insert-between
+  [f v sq ]
+  (lazy-seq
+   (let [[a b] sq
+         xs (rest sq)]
+     (cond (nil? a) '()
+           (nil? b) (cons a '())
+           :otherwise
+           (if (f a b)
+             (cons a (cons v (insert-between f v xs)))
+             (cons a (insert-between f v xs)))))))
+
+
+(defn make-sets
+  ([sq]
+   (make-sets [] sq sq))
+  ([col sq og]
+   (if (seq sq)
+     (let [r (rest sq)]
+       (recur (conj col r) r og))
+     (conj col og))))
+
+
+(defn filter-consec-sets [sqs]
+  (letfn [(redfn-itr [sq result]
+            (if (seq sq)
+              (let [[f s] state]
+                (if (= (inc f) s) (redfn-itr (rest sq) (conj result f))))
+              result))
+          (redfn [sq]
+               (redfn-itr sq [] sq))]
+    (map redfn sqs)))
+
+
+(defn find-winner [sqs]
+  (-> count
+      (sort-by sqs)
+      reverse
+      first))
+
+
+
+;; Problem 171
+;; Intervals
+
+
+;; Problem 195
+
+(defn parens [n]
+  (let [maps (comp set map)]
+    (if (= n 0)
+      #{#{""}}
+      (clojure.set/union (maps (fn [n-sets]
+                                 (maps (fn [paren-str]
+                                         (str "(" paren-str ")"))
+                                       n-sets))
+                               (parens (dec n)))
+                         (parens (dec n))))))
 
